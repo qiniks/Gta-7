@@ -5,7 +5,7 @@ function mkCar(x,y,a,col,kind){return{x,y,a,va:a,s:0,col,kind};}
 function randSidewalk(pp,R){
   const vert=rand()<0.5;
   const k=Math.round((vert?pp.x:pp.y)/P)+(((rand()*7)|0)-3);
-  const side=rand()<0.5?33:-33;
+  const side=rand()<0.5?SIDE:-SIDE;
   const u=k*P+side;
   const base=vert?pp.y:pp.x;
   const along=base+(rand()*2-1)*R;
@@ -43,8 +43,8 @@ function spawnTraffic(){
     const base=horiz?pp.x:pp.y;
     const along=base+(rand()<0.5?-1:1)*(300+rand()*260);
     let dir,x,y;
-    if(horiz){dir=rand()<0.5?0:2;x=along;y=u+(dir===0?13:-13);}
-    else{dir=rand()<0.5?1:3;y=along;x=u+(dir===1?-13:13);}
+    if(horiz){dir=rand()<0.5?0:2;x=along;y=u+(dir===0?LANE:-LANE);}
+    else{dir=rand()<0.5?1:3;y=along;x=u+(dir===1?-LANE:LANE);}
     if(Math.hypot(x-pp.x,y-pp.y)<260)continue;
     const c=mkCar(x,y,DIRA[dir],TCOLS[(rand()*TCOLS.length)|0],'traffic');
     c.dir=dir;c.line=u;c.s=1.2;cars.push(c);return;
@@ -69,7 +69,7 @@ function turnCar(c,ic){
   const cand=horiz?[1,3]:[0,2];
   const nd=cand[(rand()*2)|0];
   c.dir=nd;
-  if(nd===0)c.y=ic+13;else if(nd===2)c.y=ic-13;else if(nd===1)c.x=ic-13;else c.x=ic+13;
+  if(nd===0)c.y=ic+LANE;else if(nd===2)c.y=ic-LANE;else if(nd===1)c.x=ic-LANE;else c.x=ic+LANE;
   c.line=ic;
 }
 function stepTraffic(c){
@@ -80,6 +80,19 @@ function stepTraffic(c){
   if(!blocked)for(const o of cops){if(ahead(o.x,o.y,44)){blocked=true;break;}}
   if(!blocked&&mode==='foot'&&ahead(player.x,player.y,34))blocked=true;
   if(!blocked)for(const pd of peds){if(ahead(pd.x,pd.y,26)){blocked=true;break;}}
+  if(!blocked){
+    // hold at a red light: stop just before the zebra of the next intersection
+    const horiz=(c.dir===0||c.dir===2);
+    const sg=(c.dir===0||c.dir===1)?1:-1;
+    const along=horiz?c.x:c.y;
+    const ic=sg>0?Math.ceil((along+0.01)/P)*P:Math.floor((along-0.01)/P)*P;
+    const d=(ic-sg*(RH+6)-along)*sg;
+    if(d>-6&&d<30){
+      const ki=Math.round((horiz?ic:c.line)/P),kj=Math.round((horiz?c.line:ic)/P);
+      const ph=lightPhase(ki,kj);
+      if(ph===2||(ph===0)!==horiz)blocked=true;
+    }
+  }
   c.s=blocked?Math.max(0,c.s-0.18):Math.min(1.55,c.s+0.045);
   if(c.s>0.05){
     const horiz=(c.dir===0||c.dir===2);
@@ -98,7 +111,7 @@ function stepCop(c){
   const want=Math.atan2(t.y-c.y,t.x-c.x);
   const d=awrap(want-c.a);
   c.a+=Math.max(-0.06,Math.min(0.06,d));
-  if(Math.cos(d)>0.2)c.s=Math.min(4.1,c.s+0.12);else c.s*=0.93;
+  if(Math.cos(d)>0.2)c.s=Math.min(3.6,c.s+0.11);else c.s*=0.93;
   c.s*=0.975;
   const px=c.x,py=c.y;
   c.x+=Math.cos(c.a)*c.s;c.y+=Math.sin(c.a)*c.s;

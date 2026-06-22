@@ -9,7 +9,7 @@ function setHint(){
   if(area!=='city')return;
   hintSet(mode==='drive'
     ?'WASD / стрелки — газ и руль<br>Пробел — выйти из машины'
-    :'WASD — ходьба · Пробел — машина / дверь<br>F — '+(gun?'выстрел':'удар'));
+    :'WASD — ходьба · Пробел — машина / дверь<br>F / ЛКМ — '+(gun?'выстрел по курсору':'удар'));
 }
 function hud(){
   cashEl.textContent='$'+cash;
@@ -23,12 +23,13 @@ function hud(){
 function stepPlayer(){
   if(mode==='drive'){
     const up=key('w','arrowup','ц'),dn=key('s','arrowdown','ы'),lf=key('a','arrowleft','ф'),rt=key('d','arrowright','в');
-    if(up)pcar.s=Math.min(4.6,pcar.s+0.13);
-    if(dn)pcar.s=pcar.s>0.3?pcar.s-0.22:Math.max(-1.9,pcar.s-0.1);
-    pcar.s*=0.976;
+    if(up)pcar.s=Math.min(3.8,pcar.s+0.105);
+    if(dn)pcar.s=pcar.s>0.3?pcar.s-0.2:Math.max(-1.6,pcar.s-0.09);
+    pcar.s*=0.973;
     const turn=(rt?1:0)-(lf?1:0);
-    pcar.a+=turn*0.052*Math.min(1,Math.abs(pcar.s)/1.1)*(pcar.s<0?-1:1);
-    pcar.va=pcar.a;
+    pcar.tv=(pcar.tv||0)+(turn-(pcar.tv||0))*0.18; // eased steering input
+    pcar.a+=pcar.tv*0.05*Math.min(1,Math.abs(pcar.s)/1.6)*(pcar.s<0?-1:1);
+    pcar.va+=awrap(pcar.a-pcar.va)*0.4; // body follows the wheels with a slight lag
     const ox=pcar.x,oy=pcar.y;
     pcar.x+=Math.cos(pcar.a)*pcar.s;pcar.y+=Math.sin(pcar.a)*pcar.s;
     if(hitBuilding(pcar.x,pcar.y,9)){pcar.x=ox;pcar.y=oy;pcar.s*=-0.35;shake=Math.max(shake,5);}
@@ -67,7 +68,7 @@ function stepPlayer(){
         if(best)enterCar(best);
       }
     }
-    if(area==='city'&&prs('f','а'))doAttack();
+    if(area==='city'&&prs('f','а','mouse'))doAttack();
   }
   if(area!=='city')return;
   const pp=ppos();
@@ -141,7 +142,7 @@ function respawnBust(){
   for(const c of cars)if(c.kind!=='traffic'&&Math.hypot(c.x-player.x,c.y-player.y)<160)nearCar=true;
   if(!nearCar){
     const k=Math.round(player.y/P)*P;
-    cars.push(mkCar(player.x-40,k+13,0,'#EF9F27','free'));
+    cars.push(mkCar(player.x-40,k+LANE,0,'#EF9F27','free'));
   }
   cam.x=player.x;cam.y=player.y;cam.rot=-Math.PI/2;
   setHint();hud();
@@ -149,7 +150,7 @@ function respawnBust(){
 function reset(){
   cash=0;heat=0;bustT=0;invuln=0;mode='drive';area='city';interior=null;
   gun=false;clip=0;reserve=0;reloadT=0;bullets=[];robbed={};
-  pcar=mkCar(250,13,0,'#EF9F27','pc');
+  pcar=mkCar(250,LANE,0,'#EF9F27','pc');
   cars=[pcar];cops=[];peds=[];money=[];floats=[];
   for(let i=0;i<8;i++)money.push(newMoney());
   for(let i=0;i<24;i++)spawnPed();

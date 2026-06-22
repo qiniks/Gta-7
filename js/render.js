@@ -34,6 +34,38 @@ function drawGround(){
     }
   }
   ctx.stroke();
+  drawZebras();
+}
+function drawZebras(){
+  const R=480;
+  const k0x=Math.ceil((cam.x-R)/P),k1x=Math.floor((cam.x+R)/P);
+  const k0y=Math.ceil((cam.y-R)/P),k1y=Math.floor((cam.y+R)/P);
+  const col='rgba(214,211,199,0.7)';
+  for(let ki=k0x;ki<=k1x;ki++)for(let kj=k0y;kj<=k1y;kj++){
+    const cx=ki*P,cy=kj*P;
+    if(Math.abs(cx-cam.x)+Math.abs(cy-cam.y)>620)continue;
+    for(const sg of[1,-1]){
+      const bx=cx+sg*(RH+10); // crossing over the horizontal arms
+      for(let yy=cy-RH+4;yy<=cy+RH-8;yy+=10)
+        fq([proj(bx-5,yy,0),proj(bx+5,yy,0),proj(bx+5,yy+4.5,0),proj(bx-5,yy+4.5,0)],col);
+      const by=cy+sg*(RH+10); // crossing over the vertical arms
+      for(let xx=cx-RH+4;xx<=cx+RH-8;xx+=10)
+        fq([proj(xx,by-5,0),proj(xx,by+5,0),proj(xx+4.5,by+5,0),proj(xx+4.5,by-5,0)],col);
+    }
+  }
+}
+function drawTrafficLight(x,y,col){
+  const s0=proj(x,y,0);
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.beginPath();ctx.ellipse(s0.x,s0.y,3,1.5,0,0,7);ctx.fill();
+  ctx.strokeStyle='#3a3a37';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(s0.x,s0.y);ctx.lineTo(s0.x,s0.y-21);ctx.stroke();
+  ctx.fillStyle='#222220';
+  ctx.fillRect(s0.x-3.5,s0.y-30,7,10);
+  ctx.save();
+  ctx.shadowColor=col;ctx.shadowBlur=6;ctx.fillStyle=col;
+  ctx.beginPath();ctx.arc(s0.x,s0.y-25,2.6,0,7);ctx.fill();
+  ctx.restore();
 }
 function drawPrism(bx,by,bw,bh,hgt,pal,outline){
   const c4=[proj(bx,by,0),proj(bx+bw,by,0),proj(bx+bw,by+bh,0),proj(bx,by+bh,0)];
@@ -203,6 +235,18 @@ function render(){
     if(b.park){for(const t of b.trees)items.push({y:proj(t.x,t.y,0).y,f:drawTree.bind(null,t)});}
     else items.push({y:proj(b.bx+b.bw/2,b.by+b.bh/2,0).y,f:drawBuilding.bind(null,b)});
   }
+  // traffic lights on opposite corners of every intersection in view
+  for(let ki=Math.ceil((cam.x-480)/P);ki<=Math.floor((cam.x+480)/P);ki++)
+    for(let kj=Math.ceil((cam.y-480)/P);kj<=Math.floor((cam.y+480)/P);kj++){
+      const cx=ki*P,cy=kj*P;
+      if(Math.abs(cx-cam.x)+Math.abs(cy-cam.y)>620)continue;
+      const ph=lightPhase(ki,kj);
+      const hcol=ph===0?'#5FD75F':ph===2?'#EFB02E':'#E24B4A';
+      const vcol=ph===1?'#5FD75F':ph===2?'#EFB02E':'#E24B4A';
+      const lx=cx+RH+8,ly=cy-RH-8,mx2=cx-RH-8,my2=cy+RH+8;
+      items.push({y:proj(lx,ly,0).y,f:drawTrafficLight.bind(null,lx,ly,vcol)});
+      items.push({y:proj(mx2,my2,0).y,f:drawTrafficLight.bind(null,mx2,my2,hcol)});
+    }
   for(const m of money)if(near(m,500))items.push({y:proj(m.x,m.y,0).y,f:drawCoin.bind(null,m)});
   for(const c of cars){
     if(!near(c,550))continue;

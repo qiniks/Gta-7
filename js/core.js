@@ -3,7 +3,9 @@ const cv=document.getElementById('gta'),ctx=cv.getContext('2d');
 const W=648,H=430,DPR=Math.min(2,window.devicePixelRatio||1);
 cv.width=W*DPR;cv.height=H*DPR;ctx.scale(DPR,DPR);
 const CX=W/2,CY=H*0.6;
-const P=170,RH=27,SW=12;
+const P=200,RH=36,SW=18;
+const LANE=18;        // lane offset from the road center line
+const SIDE=RH+SW/2;   // sidewalk strip center, offset from the road center line
 const SC=8; // super-chunk size in cells: one shop/gun shop/police station per super-chunk
 const GOAL=5000;
 const rand=Math.random;
@@ -59,3 +61,27 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 function key(){for(let i=0;i<arguments.length;i++)if(keys[arguments[i]])return true;return false;}
 function prs(){for(let i=0;i<arguments.length;i++)if(press[arguments[i]])return true;return false;}
+
+// mouse: tracked in canvas logical coordinates, click counts as a press
+var mouse={x:CX,y:CY,inside:false};
+cv.style.cursor='crosshair';
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();
+  mouse.x=(e.clientX-r.left)*(W/r.width);
+  mouse.y=(e.clientY-r.top)*(H/r.height);
+  mouse.inside=true;
+});
+cv.addEventListener('mouseleave',()=>{mouse.inside=false;});
+cv.addEventListener('mousedown',e=>{if(e.button===0){press['mouse']=true;e.preventDefault();}});
+// inverse of proj at ground level (h=0)
+function screenToWorld(sx,sy){
+  const u=sx-CX,v=(sy-CY)*2;
+  const c=Math.cos(cam.rot),s=Math.sin(cam.rot);
+  return{x:cam.x+u*c+v*s,y:cam.y-u*s+v*c};
+}
+// world angle from the player toward the cursor (falls back to facing)
+function aimAt(){
+  if(!mouse.inside)return player.fa;
+  const w=screenToWorld(mouse.x,mouse.y);
+  return Math.atan2(w.y-player.y,w.x-player.x);
+}

@@ -67,6 +67,15 @@ function doorAt(x,y){
   }
   return null;
 }
+// traffic light phase at intersection (ki,kj): 0 = horizontal green, 1 = vertical green, 2 = amber/all stop
+const LCYC=520;
+function lightPhase(ki,kj){
+  const t=(frame+((hash2(ki,kj,77)*LCYC)|0))%LCYC;
+  if(t<230)return 0;
+  if(t<260)return 2;
+  if(t<490)return 1;
+  return 2;
+}
 // nearest police station door, derived from super-chunk hashes (salts must match specialAt t=2)
 function nearestPolice(x,y){
   const si0=Math.floor(Math.round(x/P)/SC),sj0=Math.floor(Math.round(y/P)/SC);

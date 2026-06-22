@@ -1,5 +1,6 @@
 // combat.js — punching, the pistol and its bullets
 function doAttack(){
+  player.fa=aimAt(); // attacks aim at the cursor, not the walking direction
   if(gun&&clip>0&&reloadT===0){
     clip--;
     const a=player.fa;
